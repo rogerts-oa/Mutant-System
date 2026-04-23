@@ -8,12 +8,17 @@ export default {
     extend: {
       colors: {
         mutant: {
-          dark: '#0A0A0A',
-          card: '#141414',
-          accent: '#22C55E', // Green for allowed
-          danger: '#EF4444', // Red for denied
-          text: '#EDEDED'
+          black: '#000000',
+          dark: '#121212',
+          neon: '#00ff00',
+          danger: '#ff4444',
+          text: '#ffffff',
+          gray: '#888888'
         }
+      },
+      borderRadius: {
+        '3xl': '1.5rem',
+        '4xl': '2rem',
       }
     },
   },

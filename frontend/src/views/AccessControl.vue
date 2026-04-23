@@ -1,62 +1,99 @@
 <template>
-  <div class="space-y-8">
-    <!-- Header Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="bg-mutant-card border border-gray-800 p-6 rounded-2xl">
-        <h3 class="text-gray-400 text-sm font-bold uppercase tracking-widest mb-1">Capacidad en Vivo</h3>
-        <p class="text-5xl font-black text-mutant-accent">{{ liveCount }} <span class="text-xl text-gray-600">/ 100</span></p>
-      </div>
-      <div class="bg-mutant-card border border-gray-800 p-6 rounded-2xl md:col-span-2 flex justify-between items-center">
-        <div>
-          <h3 class="text-gray-400 text-sm font-bold uppercase tracking-widest mb-1">Estatus del Sistema</h3>
-          <p class="text-mutant-accent font-bold flex items-center gap-2">
-            <span class="w-2 h-2 bg-mutant-accent rounded-full animate-pulse"></span>
-            OPERATIVO - TIEMPO REAL ACTIVO
-          </p>
-        </div>
-        <button @click="testCheckIn" class="bg-gray-800 hover:bg-gray-700 text-xs px-4 py-2 rounded-lg font-bold uppercase tracking-tighter transition-all">Simular Check-in</button>
-      </div>
+  <div class="space-y-10 animate-in">
+    <!-- Header -->
+    <div>
+      <h2 class="text-4xl font-black uppercase tracking-tight mb-2">CENTRO DE CONTROL DE ACCESO</h2>
+      <p class="text-gray-500 font-medium">Estado del gimnasio y registros de entrada en tiempo real.</p>
     </div>
 
-    <!-- Main Control Panel -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <!-- Last Alert -->
-      <div class="space-y-4">
-        <h2 class="text-xl font-bold italic uppercase tracking-tighter border-l-4 border-mutant-accent pl-4">Último Acceso</h2>
-        <div v-if="lastAlert" :class="`p-8 rounded-3xl border-2 transition-all duration-500 transform ${lastAlert.success ? 'bg-mutant-accent/5 border-mutant-accent shadow-[0_0_50px_rgba(34,197,94,0.1)]' : 'bg-mutant-danger/5 border-mutant-danger shadow-[0_0_50px_rgba(239,68,68,0.1)]'}`">
-          <div class="flex items-center gap-8">
-            <div class="w-32 h-32 rounded-2xl overflow-hidden bg-mutant-dark border-2 border-gray-800 flex-shrink-0">
-              <img v-if="lastAlert.foto" :src="lastAlert.foto" class="w-full h-full object-cover">
-              <div v-else class="w-full h-full flex items-center justify-center text-4xl">👤</div>
-            </div>
-            <div class="flex-grow">
-              <span :class="`inline-block px-3 py-1 rounded-full text-xs font-black uppercase mb-3 ${lastAlert.success ? 'bg-mutant-accent text-mutant-dark' : 'bg-mutant-danger text-mutant-text'}`">
-                {{ lastAlert.message }}
-              </span>
-              <h3 class="text-3xl font-black mb-1 uppercase">{{ lastAlert.nombre }}</h3>
-              <p class="text-gray-400 font-mono">Vence: {{ lastAlert.fecha_fin || 'N/A' }}</p>
-            </div>
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Center Status (Massive Card) -->
+      <div class="lg:col-span-2 relative h-[500px] bg-mutant-dark/20 rounded-[48px] border border-white/5 overflow-hidden flex flex-col items-center justify-center p-12 text-center group">
+        <!-- Background Glow -->
+        <div :class="`absolute inset-0 opacity-10 transition-colors duration-1000 ${lastAlert?.success ? 'bg-mutant-neon' : lastAlert ? 'bg-mutant-danger' : 'bg-gray-800'}`"></div>
+        
+        <div v-if="lastAlert" class="relative z-10 space-y-8 animate-in zoom-in">
+          <!-- Big Icon -->
+          <div :class="`w-32 h-32 mx-auto rounded-[40px] flex items-center justify-center text-6xl shadow-2xl transition-all ${lastAlert.success ? 'bg-mutant-neon text-black shadow-mutant-neon/20' : 'bg-mutant-danger text-white shadow-mutant-danger/20'}`">
+            {{ lastAlert.success ? '✓' : '✕' }}
+          </div>
+          
+          <div>
+            <h3 :class="`text-6xl font-black uppercase tracking-tighter mb-2 ${lastAlert.success ? 'text-mutant-neon' : 'text-mutant-danger'}`">
+              {{ lastAlert.success ? 'ACCESO PERMITIDO' : 'ACCESO DENEGADO' }}
+            </h3>
+            <p class="text-2xl font-bold uppercase text-gray-300">{{ lastAlert.nombre }}</p>
+            <p class="text-gray-500 mt-4 font-medium italic">"{{ lastAlert.success ? '¡Ten un excelente entrenamiento!' : 'Tu membresía ha vencido. Por favor, acude a recepción.' }}"</p>
           </div>
         </div>
-        <div v-else class="h-48 border-2 border-dashed border-gray-800 rounded-3xl flex items-center justify-center text-gray-600 font-bold uppercase">Esperando señal...</div>
+
+        <div v-else class="relative z-10 space-y-6 opacity-30">
+          <div class="w-32 h-32 mx-auto rounded-[40px] border-4 border-dashed border-gray-700 flex items-center justify-center text-4xl">
+            📡
+          </div>
+          <p class="text-2xl font-black uppercase tracking-widest text-gray-500">Esperando señal...</p>
+        </div>
+
+        <!-- Simulation Button Overlay -->
+        <button @click="testCheckIn" class="absolute bottom-6 right-8 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all border border-white/5">
+          Simular Entrada
+        </button>
       </div>
 
-      <!-- History List -->
-      <div class="space-y-4">
-        <h2 class="text-xl font-bold italic uppercase tracking-tighter border-l-4 border-gray-700 pl-4">Registro Reciente</h2>
-        <div class="bg-mutant-card border border-gray-800 rounded-3xl overflow-hidden">
-          <div class="max-h-[400px] overflow-y-auto p-2 space-y-2">
-            <div v-for="(log, idx) in accessLogs" :key="idx" class="flex items-center justify-between p-4 bg-mutant-dark/50 rounded-xl border border-gray-900/50">
-              <div class="flex items-center gap-4">
-                <div :class="`w-2 h-2 rounded-full ${log.success ? 'bg-mutant-accent' : 'bg-mutant-danger'}`"></div>
-                <span class="font-bold">{{ log.nombre || 'Desconocido' }}</span>
+      <!-- Widgets Column -->
+      <div class="space-y-6">
+        <!-- Live Capacity -->
+        <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8 relative overflow-hidden">
+          <div class="flex justify-between items-start mb-6">
+            <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Capacidad en Vivo</h3>
+            <div class="w-10 h-10 bg-mutant-neon/10 rounded-xl flex items-center justify-center text-mutant-neon">👤</div>
+          </div>
+          <div class="flex items-baseline gap-2 mb-4">
+            <span class="text-6xl font-black tracking-tighter">{{ liveCount }}</span>
+            <span class="text-xl font-bold text-gray-700">/ 300</span>
+          </div>
+          <div class="w-full bg-white/5 h-2 rounded-full overflow-hidden mb-2">
+            <div class="bg-mutant-neon h-full transition-all duration-1000" :style="`width: ${(liveCount/300)*100}%`"></div>
+          </div>
+          <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+            <p class="text-gray-500">Actual: <span class="text-mutant-neon">{{ Math.round((liveCount/300)*100) }}%</span></p>
+            <p class="text-mutant-neon">Óptimo</p>
+          </div>
+        </div>
+
+        <!-- Total Check-ins -->
+        <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8">
+          <div class="flex justify-between items-start mb-6">
+            <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Entradas Hoy</h3>
+            <div class="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-gray-400">📈</div>
+          </div>
+          <p class="text-5xl font-black tracking-tighter mb-2">{{ totalToday }}</p>
+          <p class="text-[10px] font-black uppercase tracking-widest text-mutant-neon">
+            +12.4% <span class="text-gray-600">vs ayer</span>
+          </p>
+        </div>
+
+        <!-- Recent Entries Mini List -->
+        <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Ingresos Recientes</h3>
+            <button class="text-[10px] font-black uppercase text-mutant-neon hover:underline">Ver Todo</button>
+          </div>
+          <div class="space-y-4">
+            <div v-for="(log, i) in accessLogs.slice(0, 3)" :key="i" class="flex items-center gap-3">
+              <div :class="`w-1 h-8 rounded-full ${log.success ? 'bg-mutant-neon' : 'bg-mutant-danger'}`"></div>
+              <div class="min-w-0">
+                <p class="text-xs font-bold truncate uppercase">{{ log.nombre }}</p>
+                <p class="text-[10px] text-gray-600 font-mono">{{ log.time }}</p>
               </div>
-              <span class="text-xs text-gray-500 font-mono">{{ new Date().toLocaleTimeString() }}</span>
             </div>
-            <div v-if="accessLogs.length === 0" class="p-8 text-center text-gray-600 italic">No hay actividad reciente</div>
+            <p v-if="accessLogs.length === 0" class="text-[10px] text-gray-700 italic uppercase font-bold text-center py-4">Sin actividad</p>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -67,40 +104,40 @@ import { io } from 'socket.io-client';
 import axios from 'axios';
 
 const liveCount = ref(0);
+const totalToday = ref(0);
 const lastAlert = ref(null);
 const accessLogs = ref([]);
 let socket = null;
 
-const fetchLiveCount = async () => {
+const fetchData = async () => {
   try {
     const res = await axios.get('http://localhost:3000/api/stats/live');
     liveCount.value = res.data.en_vivo;
+    totalToday.value = res.data.detalles.entradas;
   } catch (err) {
-    console.error('Error fetching live count:', err);
+    console.error('Error:', err);
   }
 };
 
 const testCheckIn = async () => {
   try {
-    // Simular un acceso exitoso al API
     await axios.post('http://localhost:3000/api/access/check', { socio_id: 1 });
   } catch (err) {
-    console.error('Error in simulation:', err);
+    console.error('Error:', err);
   }
 };
 
 onMounted(() => {
-  fetchLiveCount();
-  
+  fetchData();
   socket = io('http://localhost:3000');
-  
   socket.on('access_alert', (data) => {
     lastAlert.value = data;
-    accessLogs.value.unshift(data);
+    accessLogs.value.unshift({
+      ...data,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
     if (accessLogs.value.length > 10) accessLogs.value.pop();
-    
-    // Actualizar conteo después de un acceso
-    fetchLiveCount();
+    fetchData();
   });
 });
 
@@ -108,3 +145,13 @@ onUnmounted(() => {
   if (socket) socket.disconnect();
 });
 </script>
+
+<style scoped>
+.animate-in {
+  animation: fadeIn 0.5s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+</style>

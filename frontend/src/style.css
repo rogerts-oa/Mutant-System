@@ -6,19 +6,27 @@
 }
 
 body {
-  @apply bg-mutant-dark text-mutant-text font-sans antialiased;
+  @apply bg-mutant-black text-mutant-text font-sans antialiased;
+  background-color: #000000;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar Modern */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-mutant-dark;
+  background: #000;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-800 rounded-full;
+  background: #111;
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-700;
+  background: #222;
+}
+
+/* Custom Selection */
+::selection {
+  background: #00ff00;
+  color: #000;
 }
