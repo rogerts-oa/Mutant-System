@@ -4,6 +4,7 @@
       <h1 class="text-2xl font-black tracking-tighter text-mutant-accent italic">MUTANT SYSTEM 🛠️</h1>
       <div class="flex gap-6 items-center">
         <router-link to="/dashboard" class="hover:text-mutant-accent transition-colors" active-class="text-mutant-accent">Control</router-link>
+        <router-link to="/members" class="hover:text-mutant-accent transition-colors" active-class="text-mutant-accent">Socios</router-link>
         <router-link v-if="auth.isAdmin" to="/admin/analytics" class="hover:text-mutant-accent transition-colors" active-class="text-mutant-accent">Analíticas</router-link>
         <button @click="logout" class="bg-mutant-danger/10 text-mutant-danger px-4 py-1 rounded-md border border-mutant-danger/20 hover:bg-mutant-danger/20 transition-all text-sm font-bold uppercase">Salir</button>
       </div>

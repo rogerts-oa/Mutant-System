@@ -21,7 +21,8 @@ const initDb = () => {
       contacto_emergencia TEXT,
       foto TEXT,
       hash_biometrico TEXT,
-      creado_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      creado_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      deleted_at DATETIME
     )`);
 
     // Tabla de Planes

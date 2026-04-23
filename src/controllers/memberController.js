@@ -1,6 +1,9 @@
 const { db } = require('../config/database');
 const { calculateExpirationDate } = require('../services/membershipService');
 
+/**
+ * Registrar nuevo socio
+ */
 const registerMember = (req, res) => {
   const { nombre, telefono, correo, contacto_emergencia, foto, hash_biometrico, plan_id } = req.body;
 
@@ -8,65 +11,113 @@ const registerMember = (req, res) => {
     return res.status(400).json({ error: 'Nombre y Plan son obligatorios' });
   }
 
-  // 1. Insertar el Socio
   const socioQuery = `INSERT INTO socios (nombre, telefono, correo, contacto_emergencia, foto, hash_biometrico) VALUES (?, ?, ?, ?, ?, ?)`;
   
   db.run(socioQuery, [nombre, telefono, correo, contacto_emergencia, foto, hash_biometrico], function(err) {
-    if (err) {
-      return res.status(500).json({ error: 'Error al registrar socio: ' + err.message });
-    }
+    if (err) return res.status(500).json({ error: 'Error al registrar socio: ' + err.message });
 
     const socioId = this.lastID;
 
-    // 2. Obtener duración del plan
     db.get("SELECT duracion_meses FROM planes WHERE id = ?", [plan_id], (err, plan) => {
-      if (err || !plan) {
-        return res.status(400).json({ error: 'Plan no encontrado' });
-      }
+      if (err || !plan) return res.status(400).json({ error: 'Plan no encontrado' });
 
       const fechaInicio = new Date().toISOString().split('T')[0];
       const fechaFin = calculateExpirationDate(fechaInicio, plan.duracion_meses);
 
-      // 3. Crear la Membresía
-      const membresiaQuery = `INSERT INTO membresias (socio_id, plan_id, fecha_inicio, fecha_fin) VALUES (?, ?, ?, ?)`;
+      const membresiaQuery = `INSERT INTO membresias (socio_id, plan_id, fecha_inicio, fecha_fin, tipo) VALUES (?, ?, ?, ?, 'inscripcion')`;
       db.run(membresiaQuery, [socioId, plan_id, fechaInicio, fechaFin], function(err) {
-        if (err) {
-          return res.status(500).json({ error: 'Error al crear membresía: ' + err.message });
-        }
-
-        // 4. Inicializar Lealtad
+        if (err) return res.status(500).json({ error: err.message });
         db.run(`INSERT INTO lealtad (socio_id) VALUES (?)`, [socioId]);
 
-        res.status(201).json({
-          message: 'Socio registrado exitosamente',
-          socioId,
-          fechaFin
-        });
+        res.status(201).json({ message: 'Socio registrado exitosamente', socioId });
       });
     });
   });
 };
 
+/**
+ * Obtener todos los socios (No eliminados)
+ */
 const getAllMembers = (req, res) => {
   const query = `
-    SELECT s.*, m.fecha_fin, m.estatus 
+    SELECT s.*, m.fecha_fin, m.estatus, p.nombre as plan_nombre
     FROM socios s 
     LEFT JOIN membresias m ON s.id = m.socio_id
+    LEFT JOIN planes p ON m.plan_id = p.id
+    WHERE s.deleted_at IS NULL
+    GROUP BY s.id
+    ORDER BY s.creado_at DESC
   `;
   db.all(query, [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+    if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 };
 
+/**
+ * Obtener detalle de un socio (Información completa + Historial)
+ */
+const getMemberById = (req, res) => {
+  const { id } = req.params;
+  
+  const socioQuery = `
+    SELECT s.*, m.fecha_inicio, m.fecha_fin, m.estatus, p.nombre as plan_nombre, p.costo as plan_costo
+    FROM socios s
+    LEFT JOIN membresias m ON s.id = m.socio_id
+    LEFT JOIN planes p ON m.plan_id = p.id
+    WHERE s.id = ? AND s.deleted_at IS NULL
+  `;
+
+  db.get(socioQuery, [id], (err, socio) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!socio) return res.status(404).json({ error: 'Socio no encontrado' });
+
+    // Obtener historial de accesos
+    db.all("SELECT fecha_acceso, resultado, tipo FROM accesos WHERE socio_id = ? ORDER BY fecha_acceso DESC LIMIT 10", [id], (err, accesos) => {
+      socio.historial_accesos = accesos || [];
+      res.json(socio);
+    });
+  });
+};
+
+/**
+ * Actualizar datos del socio
+ */
+const updateMember = (req, res) => {
+  const { id } = req.params;
+  const { nombre, telefono, correo, contacto_emergencia, foto } = req.body;
+
+  const query = `
+    UPDATE socios 
+    SET nombre = ?, telefono = ?, correo = ?, contacto_emergencia = ?, foto = ?
+    WHERE id = ? AND deleted_at IS NULL
+  `;
+
+  db.run(query, [nombre, telefono, correo, contacto_emergencia, foto, id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: 'Socio no encontrado' });
+    res.json({ message: 'Datos actualizados correctamente' });
+  });
+};
+
+/**
+ * Dar de baja (Soft Delete)
+ */
+const deleteMember = (req, res) => {
+  const { id } = req.params;
+  const query = `UPDATE socios SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?`;
+
+  db.run(query, [id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ message: 'Socio dado de baja correctamente' });
+  });
+};
+
+/**
+ * Renovación de membresía
+ */
 const renewMembership = (req, res) => {
   const { socio_id, plan_id } = req.body;
-
-  if (!socio_id || !plan_id) {
-    return res.status(400).json({ error: 'Socio ID y Plan ID son obligatorios' });
-  }
 
   db.get("SELECT duracion_meses FROM planes WHERE id = ?", [plan_id], (err, plan) => {
     if (err || !plan) return res.status(400).json({ error: 'Plan no encontrado' });
@@ -74,18 +125,10 @@ const renewMembership = (req, res) => {
     const fechaInicio = new Date().toISOString().split('T')[0];
     const fechaFin = calculateExpirationDate(fechaInicio, plan.duracion_meses);
 
-    const query = `
-      INSERT INTO membresias (socio_id, plan_id, fecha_inicio, fecha_fin, tipo) 
-      VALUES (?, ?, ?, ?, 'renovacion')
-    `;
-
-    db.run(query, [socio_id, plan_id, fechaInicio, fechaFin], function(err) {
+    const query = `INSERT INTO membresias (socio_id, plan_id, fecha_inicio, fecha_fin, tipo) VALUES (?, ?, ?, ?, 'renovacion')`;
+    db.run(query, [socio_id, plan_id, fechaInicio, fechaFin], (err) => {
       if (err) return res.status(500).json({ error: err.message });
-      
-      res.json({
-        message: 'Membresía renovada con éxito',
-        fechaFin
-      });
+      res.json({ message: 'Membresía renovada con éxito', fechaFin });
     });
   });
 };
@@ -93,5 +136,8 @@ const renewMembership = (req, res) => {
 module.exports = {
   registerMember,
   getAllMembers,
+  getMemberById,
+  updateMember,
+  deleteMember,
   renewMembership
 };
