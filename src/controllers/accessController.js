@@ -1,7 +1,7 @@
 const { db } = require('../config/database');
 
 const processAccess = (req, res) => {
-  const { socio_id, hash_biometrico } = req.body;
+  const { socio_id, hash_biometrico, tipo = 'entrada' } = req.body;
   const io = req.app.get('socketio');
 
   if (!socio_id && !hash_biometrico) {
@@ -41,8 +41,8 @@ const processAccess = (req, res) => {
     const isActive = socio.fecha_fin >= today && socio.estatus === 'activo';
     const resultado = isActive ? 'exito' : 'fallo';
 
-    // Registrar el acceso en la DB
-    db.run(`INSERT INTO accesos (socio_id, resultado) VALUES (?, ?)`, [socio.id, resultado]);
+    // Registrar el acceso en la DB (incluyendo el tipo)
+    db.run(`INSERT INTO accesos (socio_id, resultado, tipo) VALUES (?, ?, ?)`, [socio.id, resultado, tipo]);
 
     // Si es éxito, actualizar visitas totales en lealtad
     if (isActive) {

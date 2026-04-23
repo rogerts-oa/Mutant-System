@@ -52,6 +52,7 @@ const initDb = () => {
       socio_id INTEGER,
       fecha_acceso DATETIME DEFAULT CURRENT_TIMESTAMP,
       resultado TEXT,
+      tipo TEXT DEFAULT 'entrada',
       FOREIGN KEY (socio_id) REFERENCES socios(id)
     )`);
 
