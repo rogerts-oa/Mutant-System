@@ -31,6 +31,12 @@
           <span class="font-bold text-sm">Analíticas</span>
           <div v-if="$route.path === '/admin/analytics'" class="ml-auto w-1 h-1 bg-mutant-neon rounded-full"></div>
         </router-link>
+
+        <router-link v-if="auth.isAdmin" to="/admin/settings" class="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group" active-class="bg-mutant-neon/10 text-mutant-neon">
+          <Settings2 class="w-5 h-5" />
+          <span class="font-bold text-sm">Configuración</span>
+          <div v-if="$route.path === '/admin/settings'" class="ml-auto w-1 h-1 bg-mutant-neon rounded-full"></div>
+        </router-link>
       </nav>
 
       <!-- User Profile at bottom -->
@@ -68,7 +74,8 @@ import {
   LayoutDashboard, 
   Users, 
   BarChart3, 
-  LogOut 
+  LogOut,
+  Settings2
 } from 'lucide-vue-next';
 
 const auth = useAuthStore();

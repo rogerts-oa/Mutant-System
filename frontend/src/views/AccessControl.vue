@@ -54,24 +54,24 @@
         <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8 relative overflow-hidden">
           <div class="flex justify-between items-start mb-6">
             <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Capacidad en Vivo</h3>
-            <div class="w-10 h-10 bg-mutant-neon/10 rounded-xl flex items-center justify-center text-mutant-neon">
+            <div :class="`w-10 h-10 rounded-xl flex items-center justify-center ${capacityInfo.color} bg-opacity-10`">
               <Users class="w-5 h-5" />
             </div>
           </div>
           <div class="flex items-baseline gap-2 mb-4">
             <span class="text-6xl font-black tracking-tighter">{{ liveCount }}</span>
-            <span class="text-xl font-bold text-gray-700">/ 300</span>
+            <span class="text-xl font-bold text-gray-700">/ {{ maxCapacity }}</span>
           </div>
           <div class="w-full bg-white/5 h-2 rounded-full overflow-hidden mb-2">
-            <div class="bg-mutant-neon h-full transition-all duration-1000" :style="`width: ${(liveCount/300)*100}%`"></div>
+            <div :class="`h-full transition-all duration-1000 ${capacityInfo.barColor}`" :style="`width: ${capacityPercent}%`"></div>
           </div>
           <div class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-            <p class="text-gray-500">Actual: <span class="text-mutant-neon">{{ Math.round((liveCount/300)*100) }}%</span></p>
-            <p class="text-mutant-neon">Óptimo</p>
+            <p class="text-gray-500">Actual: <span :class="capacityInfo.textColor">{{ Math.round(capacityPercent) }}%</span></p>
+            <p :class="capacityInfo.textColor">{{ capacityInfo.text }}</p>
           </div>
         </div>
 
-        <!-- Total Check-ins -->
+        <!-- Total Check-ins (Hoy vs Ayer) -->
         <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8">
           <div class="flex justify-between items-start mb-6">
             <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Entradas Hoy</h3>
@@ -80,19 +80,19 @@
             </div>
           </div>
           <p class="text-5xl font-black tracking-tighter mb-2">{{ totalToday }}</p>
-          <p class="text-[10px] font-black uppercase tracking-widest text-mutant-neon">
-            +12.4% <span class="text-gray-600">vs ayer</span>
+          <p :class="`text-[10px] font-black uppercase tracking-widest ${growth >= 0 ? 'text-mutant-neon' : 'text-mutant-danger'}`">
+            {{ growth >= 0 ? '+' : '' }}{{ growth }}% <span class="text-gray-600">vs ayer</span>
           </p>
         </div>
 
         <!-- Recent Entries Mini List -->
-        <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8">
+        <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8 flex flex-col h-[300px]">
           <div class="flex justify-between items-center mb-6">
             <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Ingresos Recientes</h3>
-            <button class="text-[10px] font-black uppercase text-mutant-neon hover:underline">Ver Todo</button>
+            <button @click="showLogsModal = true" class="text-[10px] font-black uppercase text-mutant-neon hover:underline">Ver Todo</button>
           </div>
-          <div class="space-y-4">
-            <div v-for="(log, i) in accessLogs.slice(0, 3)" :key="i" class="flex items-center gap-3">
+          <div class="space-y-4 overflow-y-auto pr-2 custom-scroll flex-grow">
+            <div v-for="(log, i) in accessLogs" :key="i" class="flex items-center gap-3">
               <div :class="`w-1 h-8 rounded-full ${log.success ? 'bg-mutant-neon' : 'bg-mutant-danger'}`"></div>
               <div class="min-w-0">
                 <p class="text-xs font-bold truncate uppercase">{{ log.nombre || 'Anónimo' }}</p>
@@ -103,36 +103,69 @@
           </div>
         </div>
       </div>
+    </div>
 
+    <!-- Logs Modal -->
+    <div v-if="showLogsModal" class="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+      <div class="bg-mutant-dark border border-white/10 w-full max-w-4xl rounded-[40px] shadow-2xl overflow-hidden h-[80vh] flex flex-col">
+        <div class="p-8 border-b border-white/5 flex justify-between items-center">
+          <h3 class="text-2xl font-black uppercase italic">Historial Completo</h3>
+          <button @click="showLogsModal = false" class="text-gray-500 hover:text-white"><X class="w-6 h-6" /></button>
+        </div>
+        <div class="overflow-y-auto p-8 flex-grow space-y-4">
+           <div v-for="(log, i) in fullLogs" :key="i" class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+             <div class="flex items-center gap-4">
+               <div :class="`w-3 h-3 rounded-full ${log.resultado === 'exito' ? 'bg-mutant-neon' : 'bg-mutant-danger'}`"></div>
+               <div>
+                 <p class="font-bold text-sm uppercase">{{ log.nombre || 'Desconocido' }}</p>
+                 <p class="text-[10px] text-gray-500 font-mono">{{ new Date(log.fecha_acceso).toLocaleString() }}</p>
+               </div>
+             </div>
+             <span class="text-[10px] font-black uppercase px-3 py-1 bg-white/10 rounded-lg">{{ log.tipo }}</span>
+           </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import { 
-  Check, 
-  X, 
-  Radio, 
-  LogIn, 
-  LogOut, 
-  Users, 
-  Activity 
+  Check, X, Radio, LogIn, LogOut, Users, Activity 
 } from 'lucide-vue-next';
 
 const liveCount = ref(0);
+const maxCapacity = ref(300);
 const totalToday = ref(0);
+const growth = ref(0);
 const lastAlert = ref(null);
 const accessLogs = ref([]);
+const fullLogs = ref([]);
+const showLogsModal = ref(false);
 let socket = null;
+
+const capacityPercent = computed(() => (liveCount.value / maxCapacity.value) * 100);
+
+const capacityInfo = computed(() => {
+  const p = capacityPercent.value;
+  if (p < 70) return { color: 'text-mutant-neon', barColor: 'bg-mutant-neon', textColor: 'text-mutant-neon', text: 'ÓPTIMO' };
+  if (p < 90) return { color: 'text-orange-500', barColor: 'bg-orange-500', textColor: 'text-orange-500', text: 'ALTA AFLUENCIA' };
+  return { color: 'text-mutant-danger', barColor: 'bg-mutant-danger', textColor: 'text-mutant-danger', text: 'CAPACIDAD CRÍTICA' };
+});
 
 const fetchData = async () => {
   try {
     const res = await axios.get('http://localhost:3000/api/stats/live');
     liveCount.value = res.data.en_vivo;
+    maxCapacity.value = res.data.cupo_maximo;
     totalToday.value = res.data.detalles.entradas;
+    growth.value = res.data.crecimiento;
+
+    const logsRes = await axios.get('http://localhost:3000/api/stats/logs');
+    fullLogs.value = logsRes.data;
   } catch (err) {
     console.error('Error:', err);
   }
@@ -149,8 +182,6 @@ const testCheckIn = async () => {
 const testCheckOut = async () => {
   try {
     await axios.post('http://localhost:3000/api/access/exit', { socio_id: 1 });
-    // Refrescar datos después de salida
-    fetchData();
   } catch (err) {
     console.error('Error:', err);
   }
@@ -181,11 +212,8 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.animate-in {
-  animation: fadeIn 0.5s ease-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+.animate-in { animation: fadeIn 0.5s ease-out; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.custom-scroll::-webkit-scrollbar { width: 4px; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
 </style>

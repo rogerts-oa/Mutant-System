@@ -26,6 +26,12 @@ const routes = [
     meta: { requiresAuth: true, role: 'admin' }
   },
   {
+    path: '/admin/settings',
+    name: 'Settings',
+    component: () => import('../views/Settings.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
     path: '/',
     redirect: '/dashboard'
   }

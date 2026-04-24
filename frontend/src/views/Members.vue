@@ -120,9 +120,9 @@
             <div class="relative">
               <label class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2 block">Plan</label>
               <select v-model="form.plan_id" required class="w-full bg-mutant-black border border-white/10 rounded-2xl p-4 focus:border-mutant-neon outline-none font-bold uppercase text-xs appearance-none">
-                <option :value="1">MENSUAL ($500)</option>
-                <option :value="2">TRIMESTRAL ($1350)</option>
-                <option :value="3">ANUAL ($4800)</option>
+                <option v-for="plan in planes" :key="plan.id" :value="plan.id">
+                  {{ plan.nombre }} (${{ plan.costo }})
+                </option>
               </select>
               <ChevronDown class="absolute right-4 top-[3.2rem] w-4 h-4 text-gray-500 pointer-events-none" />
             </div>
@@ -151,6 +151,7 @@ import {
 } from 'lucide-vue-next';
 
 const members = ref([]);
+const planes = ref([]);
 const searchQuery = ref('');
 const statusFilter = ref('all');
 const showRegisterModal = ref(false);
@@ -158,8 +159,18 @@ const showRegisterModal = ref(false);
 const form = ref({
   nombre: '',
   telefono: '',
-  plan_id: 1
+  plan_id: null
 });
+
+const fetchPlanes = async () => {
+  try {
+    const res = await axios.get('http://localhost:3000/api/stats/planes');
+    planes.value = res.data;
+    if (planes.value.length > 0) form.value.plan_id = planes.value[0].id;
+  } catch (err) {
+    console.error('Error fetching planes:', err);
+  }
+};
 
 const fetchMembers = async () => {
   try {
@@ -220,7 +231,10 @@ const viewDetails = (id) => {
   console.log('View details for member:', id);
 };
 
-onMounted(fetchMembers);
+onMounted(() => {
+  fetchMembers();
+  fetchPlanes();
+});
 </script>
 
 <style scoped>

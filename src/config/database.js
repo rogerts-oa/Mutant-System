@@ -66,6 +66,20 @@ const initDb = () => {
       FOREIGN KEY (socio_id) REFERENCES socios(id)
     )`);
 
+    // Tabla de Configuración Global
+    db.run(`CREATE TABLE IF NOT EXISTS configuracion (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clave TEXT UNIQUE,
+      valor TEXT
+    )`);
+
+    // Insertar configuración inicial si no existe
+    db.get("SELECT COUNT(*) as count FROM configuracion", (err, row) => {
+      if (row.count === 0) {
+        db.run("INSERT INTO configuracion (clave, valor) VALUES (?, ?)", ['cupo_maximo', '300']);
+      }
+    });
+
     // Insertar planes por defecto si no existen
     db.get("SELECT COUNT(*) as count FROM planes", (err, row) => {
       if (row.count === 0) {

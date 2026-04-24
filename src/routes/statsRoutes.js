@@ -6,5 +6,10 @@ router.get('/live', statsController.getLiveCount);
 router.get('/history', statsController.getAttendanceHistory);
 router.get('/peak-hours', statsController.getPeakHours);
 router.get('/income', statsController.getIncomeMetrics);
+router.get('/config', statsController.getConfig);
+router.post('/config', statsController.updateConfig);
+router.get('/planes', statsController.getPlanes);
+router.put('/planes/:id', statsController.updatePlan);
+router.get('/logs', statsController.getRecentAccessLogs);
 
 module.exports = router;
