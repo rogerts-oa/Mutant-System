@@ -11,5 +11,6 @@ router.post('/config', statsController.updateConfig);
 router.get('/planes', statsController.getPlanes);
 router.put('/planes/:id', statsController.updatePlan);
 router.get('/logs', statsController.getRecentAccessLogs);
+router.get('/export', statsController.exportAttendanceToCSV);
 
 module.exports = router;

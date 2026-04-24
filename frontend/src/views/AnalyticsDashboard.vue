@@ -8,7 +8,7 @@
       </div>
       <!-- Time Selector -->
       <div class="bg-mutant-dark/50 p-1.5 rounded-2xl border border-white/5 flex gap-1">
-        <button v-for="t in ['HOY', 'SEMANA', 'MES', 'AÑO']" :key="t" :class="`px-4 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTime === t ? 'bg-white/10 text-white shadow-xl' : 'text-gray-600 hover:text-gray-400'}`" @click="activeTime = t">
+        <button v-for="t in ['HOY', 'SEMANA', 'MES', 'AÑO']" :key="t" :class="`px-4 py-2 rounded-xl text-[10px] font-black tracking-widest transition-all ${activeTime === t ? 'bg-white/10 text-white shadow-xl' : 'text-gray-600 hover:text-gray-400'}`" @click="changeTime(t)">
           {{ t }}
         </button>
       </div>
@@ -81,12 +81,12 @@
               <Calendar class="w-5 h-5" />
             </div>
             <div>
-              <h4 class="text-[10px] font-black text-mutant-neon uppercase tracking-[0.3em] mb-1">REPORTE DE AFLUENCIA SEMANAL</h4>
-              <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total de ingresos por día</p>
+              <h4 class="text-[10px] font-black text-mutant-neon uppercase tracking-[0.3em] mb-1">REPORTE DE AFLUENCIA ({{ activeTime }})</h4>
+              <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total de ingresos agrupados</p>
             </div>
           </div>
-          <button class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all flex items-center gap-2">
-            <Download class="w-3 h-3" /> Exportar
+          <button @click="exportCSV" class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all flex items-center gap-2">
+            <Download class="w-3 h-3" /> Exportar CSV
           </button>
         </div>
         <div class="flex-grow min-h-0">
@@ -106,11 +106,11 @@
             </div>
             <div>
               <h4 class="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">IDENTIFICACIÓN DE HORAS PICO</h4>
-              <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Tendencias de uso de la instalación</p>
+              <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Zona Horaria Local (Real)</p>
             </div>
           </div>
-          <button class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all flex items-center gap-2">
-            <Settings class="w-3 h-3" /> Opciones
+          <button @click="fetchData" class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all flex items-center gap-2">
+            <RefreshCw class="w-3 h-3" /> Actualizar
           </button>
         </div>
         <div class="flex-grow min-h-0">
@@ -127,15 +127,7 @@ import axios from 'axios';
 import { Line, Bar } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, BarElement } from 'chart.js';
 import { 
-  DollarSign, 
-  TrendingUp, 
-  UserPlus, 
-  RefreshCw, 
-  Calendar, 
-  Download, 
-  Clock, 
-  Settings,
-  Loader2
+  DollarSign, TrendingUp, UserPlus, RefreshCw, Calendar, Download, Clock, Loader2
 } from 'lucide-vue-next';
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, BarElement);
@@ -173,20 +165,38 @@ const chartOptions = {
   }
 };
 
+const changeTime = (t) => {
+  activeTime.value = t;
+  fetchData();
+};
+
+const exportCSV = async () => {
+  try {
+    const response = await axios.get('http://localhost:3000/api/stats/export', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'reporte_afluencia.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (err) { alert('Error al exportar'); }
+};
+
 const fetchData = async () => {
   loading.value = true;
   try {
     const [incomeRes, peaksRes, historyRes] = await Promise.all([
       axios.get('http://localhost:3000/api/stats/income'),
       axios.get('http://localhost:3000/api/stats/peak-hours'),
-      axios.get('http://localhost:3000/api/stats/history?period=day')
+      axios.get(`http://localhost:3000/api/stats/history?period=${activeTime.value}`)
     ]);
 
     income.value = incomeRes.data;
 
-    if (historyRes.data.length > 0) {
+    if (historyRes.data) {
       historyData.value = {
-        labels: historyRes.data.map(h => h.periodo.split('-').slice(1).join('/')),
+        labels: historyRes.data.map(h => h.periodo),
         datasets: [{
           data: historyRes.data.map(h => h.total),
           borderColor: '#00ff00',
@@ -200,7 +210,7 @@ const fetchData = async () => {
       };
     }
 
-    if (peaksRes.data.length > 0) {
+    if (peaksRes.data) {
       peakData.value = {
         labels: peaksRes.data.map(p => p.intervalo),
         datasets: [{
@@ -214,7 +224,7 @@ const fetchData = async () => {
   } catch (err) {
     console.error('Error:', err);
   } finally {
-    setTimeout(() => { loading.value = false; }, 800); // Artificial delay for smoothness
+    setTimeout(() => { loading.value = false; }, 600);
   }
 };
 
@@ -222,11 +232,6 @@ onMounted(fetchData);
 </script>
 
 <style scoped>
-.animate-in {
-  animation: fadeIn 0.6s ease-out;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+.animate-in { animation: fadeIn 0.6s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>

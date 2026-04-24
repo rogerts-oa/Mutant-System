@@ -114,21 +114,34 @@ const deleteMember = (req, res) => {
 };
 
 /**
- * Renovación de membresía
+ * Renovación de membresía (Lógica Senior: Sumar a fecha actual o a fecha vencimiento)
  */
 const renewMembership = (req, res) => {
   const { socio_id, plan_id } = req.body;
 
+  // 1. Obtener el plan
   db.get("SELECT duracion_meses FROM planes WHERE id = ?", [plan_id], (err, plan) => {
     if (err || !plan) return res.status(400).json({ error: 'Plan no encontrado' });
 
-    const fechaInicio = new Date().toISOString().split('T')[0];
-    const fechaFin = calculateExpirationDate(fechaInicio, plan.duracion_meses);
+    // 2. Obtener la membresía actual para ver si está activa
+    db.get("SELECT fecha_fin FROM membresias WHERE socio_id = ? ORDER BY id DESC LIMIT 1", [socio_id], (err, current) => {
+      let startDate = new Date().toISOString().split('T')[0];
+      
+      if (current) {
+        const today = new Date().toISOString().split('T')[0];
+        // Si la membresía actual vence en el futuro, sumar a partir de esa fecha
+        if (current.fecha_fin > today) {
+          startDate = current.fecha_fin;
+        }
+      }
 
-    const query = `INSERT INTO membresias (socio_id, plan_id, fecha_inicio, fecha_fin, tipo) VALUES (?, ?, ?, ?, 'renovacion')`;
-    db.run(query, [socio_id, plan_id, fechaInicio, fechaFin], (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: 'Membresía renovada con éxito', fechaFin });
+      const fechaFin = calculateExpirationDate(startDate, plan.duracion_meses);
+
+      const query = `INSERT INTO membresias (socio_id, plan_id, fecha_inicio, fecha_fin, tipo) VALUES (?, ?, ?, ?, 'renovacion')`;
+      db.run(query, [socio_id, plan_id, startDate, fechaFin], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Membresía renovada con éxito', fechaFin });
+      });
     });
   });
 };
