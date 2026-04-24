@@ -7,7 +7,7 @@
         <p class="text-gray-500 font-medium">Administra las membresías y credenciales de acceso.</p>
       </div>
       <button @click="openRegisterModal" class="bg-mutant-neon text-black font-black px-6 py-4 rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(0,255,0,0.2)] flex items-center gap-2 uppercase text-sm tracking-tighter">
-        <span class="text-xl leading-none">+</span> NUEVO SOCIO
+        <UserPlus class="w-5 h-5" /> NUEVO SOCIO
       </button>
     </div>
 
@@ -17,13 +17,16 @@
       <div class="p-6 flex flex-wrap gap-4 items-center">
         <div class="relative flex-grow max-w-xl">
           <input v-model="searchQuery" type="text" placeholder="Buscar por nombre, correo o ID..." class="w-full bg-mutant-dark border border-white/5 rounded-2xl p-4 pl-12 focus:border-mutant-neon outline-none text-sm font-medium transition-all">
-          <span class="absolute left-4 top-4 opacity-30 text-lg">🔍</span>
+          <Search class="absolute left-4 top-4 opacity-30 w-5 h-5" />
         </div>
-        <select v-model="statusFilter" class="bg-mutant-dark border border-white/5 rounded-2xl p-4 text-xs font-bold uppercase tracking-widest outline-none appearance-none cursor-pointer hover:border-white/10 pr-10">
-          <option value="all">TODOS LOS ESTATUS ▽</option>
-          <option value="activo">ACTIVOS</option>
-          <option value="vencido">VENCIDOS</option>
-        </select>
+        <div class="relative group">
+          <select v-model="statusFilter" class="bg-mutant-dark border border-white/5 rounded-2xl p-4 text-xs font-bold uppercase tracking-widest outline-none appearance-none cursor-pointer hover:border-white/10 pr-12">
+            <option value="all">TODOS LOS ESTATUS</option>
+            <option value="activo">ACTIVOS</option>
+            <option value="vencido">VENCIDOS</option>
+          </select>
+          <ChevronDown class="absolute right-4 top-4 w-4 h-4 text-gray-500 pointer-events-none" />
+        </div>
       </div>
 
       <!-- Table Content -->
@@ -68,7 +71,9 @@
                 </div>
               </td>
               <td class="px-8 py-6 text-right">
-                <button class="text-gray-600 hover:text-white transition-colors text-xl">⋮</button>
+                <button class="text-gray-600 hover:text-white transition-colors">
+                  <MoreVertical class="w-5 h-5" />
+                </button>
               </td>
             </tr>
           </tbody>
@@ -79,20 +84,28 @@
       <div class="p-8 border-t border-white/5 flex justify-between items-center bg-white/[0.01]">
         <p class="text-xs font-black text-gray-600 uppercase tracking-widest">Mostrando <span class="text-gray-300">1 a {{ filteredMembers.length }}</span> de <span class="text-gray-300">{{ members.length }}</span></p>
         <div class="flex gap-2">
-          <button class="w-10 h-10 rounded-xl border border-white/5 flex items-center justify-center text-gray-500 hover:bg-white/5 transition-all">&lt;</button>
-          <button class="w-10 h-10 rounded-xl bg-mutant-neon text-black font-black flex items-center justify-center">1</button>
-          <button class="w-10 h-10 rounded-xl border border-white/5 flex items-center justify-center text-gray-500 hover:bg-white/5 transition-all">&gt;</button>
+          <button class="w-10 h-10 rounded-xl border border-white/5 flex items-center justify-center text-gray-500 hover:bg-white/5 transition-all">
+            <ChevronLeft class="w-4 h-4" />
+          </button>
+          <button class="w-10 h-10 rounded-xl bg-mutant-neon text-black font-black flex items-center justify-center text-xs">1</button>
+          <button class="w-10 h-10 rounded-xl border border-white/5 flex items-center justify-center text-gray-500 hover:bg-white/5 transition-all">
+            <ChevronRight class="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
 
     <!-- Registration Modal -->
-    <!-- (Maintain current functionality but update styles to rounded-3xl and black theme) -->
     <div v-if="showRegisterModal" class="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-50 p-4">
       <div class="bg-mutant-dark border border-white/10 w-full max-w-xl rounded-[40px] shadow-[0_0_100px_rgba(0,255,0,0.05)] overflow-hidden">
-        <div class="p-10 border-b border-white/5">
-          <h3 class="text-3xl font-black uppercase italic">Nuevo Socio</h3>
-          <p class="text-gray-500 text-sm mt-1">Ingresa los datos para la nueva membresía.</p>
+        <div class="p-10 border-b border-white/5 flex justify-between items-center">
+          <div>
+            <h3 class="text-3xl font-black uppercase italic">Nuevo Socio</h3>
+            <p class="text-gray-500 text-sm mt-1">Ingresa los datos para la nueva membresía.</p>
+          </div>
+          <button @click="showRegisterModal = false" class="text-gray-500 hover:text-white">
+            <X class="w-6 h-6" />
+          </button>
         </div>
         <form @submit.prevent="handleRegister" class="p-10 space-y-6">
           <div class="grid grid-cols-2 gap-6">
@@ -104,13 +117,14 @@
               <label class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2 block">Teléfono</label>
               <input v-model="form.telefono" type="text" class="w-full bg-mutant-black border border-white/10 rounded-2xl p-4 focus:border-mutant-neon outline-none font-mono">
             </div>
-            <div>
+            <div class="relative">
               <label class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2 block">Plan</label>
-              <select v-model="form.plan_id" required class="w-full bg-mutant-black border border-white/10 rounded-2xl p-4 focus:border-mutant-neon outline-none font-bold uppercase text-xs">
+              <select v-model="form.plan_id" required class="w-full bg-mutant-black border border-white/10 rounded-2xl p-4 focus:border-mutant-neon outline-none font-bold uppercase text-xs appearance-none">
                 <option :value="1">MENSUAL ($500)</option>
                 <option :value="2">TRIMESTRAL ($1350)</option>
                 <option :value="3">ANUAL ($4800)</option>
               </select>
+              <ChevronDown class="absolute right-4 top-[3.2rem] w-4 h-4 text-gray-500 pointer-events-none" />
             </div>
           </div>
           <div class="flex gap-4 pt-4">
@@ -126,6 +140,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+import { 
+  UserPlus, 
+  Search, 
+  ChevronDown, 
+  MoreVertical, 
+  ChevronLeft, 
+  ChevronRight, 
+  X 
+} from 'lucide-vue-next';
 
 const members = ref([]);
 const searchQuery = ref('');
@@ -191,6 +214,10 @@ const handleRegister = async () => {
   } catch (err) {
     alert('Error');
   }
+};
+
+const viewDetails = (id) => {
+  console.log('View details for member:', id);
 };
 
 onMounted(fetchMembers);

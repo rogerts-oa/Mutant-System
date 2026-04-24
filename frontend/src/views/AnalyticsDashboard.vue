@@ -17,38 +17,53 @@
     <!-- Metrics Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
       <!-- Total Revenue -->
-      <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8 group hover:border-mutant-neon/20 transition-all">
+      <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8 group hover:border-mutant-neon/20 transition-all relative">
+        <div v-if="loading" class="absolute inset-0 bg-mutant-dark/20 backdrop-blur-sm flex items-center justify-center rounded-[32px] z-10">
+          <Loader2 class="w-8 h-8 text-mutant-neon animate-spin" />
+        </div>
         <div class="flex justify-between items-start mb-8">
           <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Ingresos Totales</h3>
-          <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-mutant-neon text-xl font-bold group-hover:scale-110 transition-transform">$</div>
+          <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-mutant-neon group-hover:scale-110 transition-transform">
+            <DollarSign class="w-6 h-6" />
+          </div>
         </div>
-        <p class="text-5xl font-black tracking-tighter mb-4">${{ income.total_monto?.toLocaleString() }}</p>
+        <p class="text-5xl font-black tracking-tighter mb-4">${{ income.total_monto?.toLocaleString() || 0 }}</p>
         <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-mutant-neon">
-          <span>📈</span> +12.5% <span class="text-gray-600">desde el mes pasado</span>
+          <TrendingUp class="w-3 h-3" /> +12.5% <span class="text-gray-600">desde el mes pasado</span>
         </div>
       </div>
 
       <!-- New Registrations -->
-      <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8 group hover:border-blue-500/20 transition-all">
+      <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8 group hover:border-blue-500/20 transition-all relative">
+        <div v-if="loading" class="absolute inset-0 bg-mutant-dark/20 backdrop-blur-sm flex items-center justify-center rounded-[32px] z-10">
+          <Loader2 class="w-8 h-8 text-blue-500 animate-spin" />
+        </div>
         <div class="flex justify-between items-start mb-8">
           <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Nuevos Registros</h3>
-          <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-blue-500 text-xl group-hover:scale-110 transition-transform">👤</div>
+          <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-blue-500 group-hover:scale-110 transition-transform">
+            <UserPlus class="w-6 h-6" />
+          </div>
         </div>
-        <p class="text-5xl font-black tracking-tighter mb-4">${{ income.inscripciones?.monto?.toLocaleString() }}</p>
+        <p class="text-5xl font-black tracking-tighter mb-4">${{ income.inscripciones?.monto?.toLocaleString() || 0 }}</p>
         <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-500">
-          <span>📈</span> +18.3% <span class="text-gray-600">desde el mes pasado</span>
+          <TrendingUp class="w-3 h-3" /> +18.3% <span class="text-gray-600">desde el mes pasado</span>
         </div>
       </div>
 
       <!-- Renewals -->
-      <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8 group hover:border-orange-500/20 transition-all">
+      <div class="bg-mutant-dark/40 rounded-[32px] border border-white/5 p-8 group hover:border-orange-500/20 transition-all relative">
+        <div v-if="loading" class="absolute inset-0 bg-mutant-dark/20 backdrop-blur-sm flex items-center justify-center rounded-[32px] z-10">
+          <Loader2 class="w-8 h-8 text-orange-500 animate-spin" />
+        </div>
         <div class="flex justify-between items-start mb-8">
           <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Ingresos por Renovación</h3>
-          <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-orange-500 text-xl group-hover:scale-110 transition-transform">🔄</div>
+          <div class="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+            <RefreshCw class="w-6 h-6" />
+          </div>
         </div>
-        <p class="text-5xl font-black tracking-tighter mb-4">${{ income.renovaciones?.monto?.toLocaleString() }}</p>
+        <p class="text-5xl font-black tracking-tighter mb-4">${{ income.renovaciones?.monto?.toLocaleString() || 0 }}</p>
         <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-orange-500">
-          <span>📈</span> +6.7% <span class="text-gray-600">desde el mes pasado</span>
+          <TrendingUp class="w-3 h-3" /> +6.7% <span class="text-gray-600">desde el mes pasado</span>
         </div>
       </div>
     </div>
@@ -56,13 +71,23 @@
     <!-- Charts Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Weekly Attendance -->
-      <div class="bg-mutant-dark/30 rounded-[40px] border border-white/5 p-10 flex flex-col h-[400px]">
+      <div class="bg-mutant-dark/30 rounded-[40px] border border-white/5 p-10 flex flex-col h-[400px] relative">
+        <div v-if="loading" class="absolute inset-0 bg-mutant-dark/10 backdrop-blur-sm flex items-center justify-center rounded-[40px] z-10">
+          <Loader2 class="w-12 h-12 text-mutant-neon animate-spin" />
+        </div>
         <div class="flex justify-between items-center mb-8">
-          <div>
-            <h4 class="text-[10px] font-black text-mutant-neon uppercase tracking-[0.3em] mb-1">REPORTE DE AFLUENCIA SEMANAL</h4>
-            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total de ingresos por día</p>
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-mutant-neon/10 rounded-xl flex items-center justify-center text-mutant-neon">
+              <Calendar class="w-5 h-5" />
+            </div>
+            <div>
+              <h4 class="text-[10px] font-black text-mutant-neon uppercase tracking-[0.3em] mb-1">REPORTE DE AFLUENCIA SEMANAL</h4>
+              <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total de ingresos por día</p>
+            </div>
           </div>
-          <button class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all">Exportar</button>
+          <button class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all flex items-center gap-2">
+            <Download class="w-3 h-3" /> Exportar
+          </button>
         </div>
         <div class="flex-grow min-h-0">
           <Line v-if="historyData" :data="historyData" :options="chartOptions" />
@@ -70,13 +95,23 @@
       </div>
 
       <!-- Peak Hours -->
-      <div class="bg-mutant-dark/30 rounded-[40px] border border-white/5 p-10 flex flex-col h-[400px]">
+      <div class="bg-mutant-dark/30 rounded-[40px] border border-white/5 p-10 flex flex-col h-[400px] relative">
+        <div v-if="loading" class="absolute inset-0 bg-mutant-dark/10 backdrop-blur-sm flex items-center justify-center rounded-[40px] z-10">
+          <Loader2 class="w-12 h-12 text-orange-500 animate-spin" />
+        </div>
         <div class="flex justify-between items-center mb-8">
-          <div>
-            <h4 class="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">IDENTIFICACIÓN DE HORAS PICO</h4>
-            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Tendencias de uso de la instalación</p>
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center text-orange-500">
+              <Clock class="w-5 h-5" />
+            </div>
+            <div>
+              <h4 class="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1">IDENTIFICACIÓN DE HORAS PICO</h4>
+              <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Tendencias de uso de la instalación</p>
+            </div>
           </div>
-          <button class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all">Opciones</button>
+          <button class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 transition-all flex items-center gap-2">
+            <Settings class="w-3 h-3" /> Opciones
+          </button>
         </div>
         <div class="flex-grow min-h-0">
           <Bar v-if="peakData" :data="peakData" :options="chartOptions" />
@@ -91,6 +126,17 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { Line, Bar } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, BarElement } from 'chart.js';
+import { 
+  DollarSign, 
+  TrendingUp, 
+  UserPlus, 
+  RefreshCw, 
+  Calendar, 
+  Download, 
+  Clock, 
+  Settings,
+  Loader2
+} from 'lucide-vue-next';
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, BarElement);
 
@@ -98,6 +144,7 @@ const activeTime = ref('HOY');
 const income = ref({});
 const historyData = ref(null);
 const peakData = ref(null);
+const loading = ref(true);
 
 const chartOptions = {
   responsive: true,
@@ -127,6 +174,7 @@ const chartOptions = {
 };
 
 const fetchData = async () => {
+  loading.value = true;
   try {
     const [incomeRes, peaksRes, historyRes] = await Promise.all([
       axios.get('http://localhost:3000/api/stats/income'),
@@ -165,6 +213,8 @@ const fetchData = async () => {
     }
   } catch (err) {
     console.error('Error:', err);
+  } finally {
+    setTimeout(() => { loading.value = false; }, 800); // Artificial delay for smoothness
   }
 };
 

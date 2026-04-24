@@ -70,6 +70,26 @@ const processAccess = (req, res) => {
   });
 };
 
+const processExit = (req, res) => {
+  const { socio_id } = req.body;
+  const io = req.app.get('socketio');
+
+  if (!socio_id) {
+    return res.status(400).json({ error: 'ID de socio requerido para salida' });
+  }
+
+  // Registrar salida
+  db.run(`INSERT INTO accesos (socio_id, resultado, tipo) VALUES (?, 'exito', 'salida')`, [socio_id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+
+    // Emitir actualización de capacidad (opcional, el dashboard escuchará a través de liveCount o evento)
+    io.emit('exit_alert', { socio_id, message: 'Salida registrada' });
+
+    res.json({ success: true, message: 'Salida registrada correctamente' });
+  });
+};
+
 module.exports = {
-  processAccess
+  processAccess,
+  processExit
 };
