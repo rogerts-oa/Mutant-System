@@ -39,7 +39,7 @@
         </div>
 
         <div class="space-y-4">
-          <div v-for="plan in planes" :key="plan.id" class="bg-mutant-black border border-white/5 rounded-2xl p-5 flex items-center justify-between group">
+          <div v-for="plan in sortedPlanes" :key="plan.id" class="bg-mutant-black border border-white/5 rounded-2xl p-5 flex items-center justify-between group">
             <div>
               <p class="font-black uppercase tracking-tight text-sm">{{ plan.nombre }}</p>
               <p class="text-[10px] text-gray-500 uppercase font-bold">{{ plan.duracion_meses }} Mes(es)</p>
@@ -67,7 +67,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { Settings2, CreditCard, Save } from 'lucide-vue-next';
 
@@ -87,6 +87,10 @@ const fetchData = async () => {
     console.error('Error fetching settings:', err);
   }
 };
+
+const sortedPlanes = computed(() => {
+  return [...planes.value].sort((a, b) => a.duracion_meses - b.duracion_meses);
+});
 
 const saveConfig = async (clave, valor) => {
   try {

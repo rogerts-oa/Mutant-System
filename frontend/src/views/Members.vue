@@ -123,7 +123,9 @@
             <div v-if="modal.type === 'register'" class="relative">
               <label class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2 block">Plan Inicial</label>
               <select v-model="form.plan_id" required class="w-full bg-mutant-black border border-white/10 rounded-2xl p-4 focus:border-mutant-neon outline-none font-bold uppercase text-xs appearance-none">
-                <option v-for="plan in planes" :key="plan.id" :value="plan.id">{{ plan.nombre }} (${{ plan.costo }})</option>
+                <option v-for="plan in sortedPlanes" :key="plan.id" :value="plan.id">
+                  {{ plan.nombre }} (${{ plan.costo }})
+                </option>
               </select>
               <ChevronDown class="absolute right-4 top-[3.2rem] w-4 h-4 text-gray-500 pointer-events-none" />
             </div>
@@ -137,7 +139,7 @@
             <div class="relative">
               <label class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-2 block">Seleccionar Nuevo Plan</label>
               <select v-model="form.plan_id" required class="w-full bg-mutant-black border border-white/10 rounded-2xl p-4 focus:border-mutant-neon outline-none font-bold uppercase text-xs appearance-none">
-                <option v-for="plan in planes" :key="plan.id" :value="plan.id">{{ plan.nombre }} (${{ plan.costo }})</option>
+                <option v-for="plan in sortedPlanes" :key="plan.id" :value="plan.id">{{ plan.nombre }} (${{ plan.costo }})</option>
               </select>
               <ChevronDown class="absolute right-4 top-[3.2rem] w-4 h-4 text-gray-500 pointer-events-none" />
             </div>
@@ -195,6 +197,10 @@ const planes = ref([]);
 const searchQuery = ref('');
 const statusFilter = ref('all');
 const activeMenu = ref(null);
+
+const sortedPlanes = computed(() => {
+  return [...planes.value].sort((a, b) => a.duracion_meses - b.duracion_meses);
+});
 
 const historyModal = ref({
   show: false,

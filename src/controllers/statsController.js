@@ -1,7 +1,7 @@
 const { db } = require('../config/database');
 
 /**
- * RF-10: Contador en Tiempo Real (En vivo)
+ * RF-10: Contador en Tiempo Real (En vivo) con Timezone México
  */
 const getLiveCount = (req, res) => {
   const query = `
@@ -44,17 +44,16 @@ const getLiveCount = (req, res) => {
 };
 
 /**
- * RF-11: Reporte de Afluencia con Filtros (Hoy, Semana, Mes, Año)
+ * RF-11: Reporte de Afluencia con Timezone México
  */
 const getAttendanceHistory = (req, res) => {
   const { period = 'HOY' } = req.query;
   
-  let timeFormat = '%H:00'; // Default for HOY
+  let timeFormat = '%H:00'; 
   let whereClause = "date(fecha_acceso, 'localtime') = date('now', 'localtime')";
-  let groupBy = "periodo";
 
   if (period === 'SEMANA') {
-    timeFormat = '%Y-%W-%w'; // Año-Semana-Día
+    timeFormat = '%Y-%W-%w'; 
     whereClause = "date(fecha_acceso, 'localtime') >= date('now', 'localtime', '-7 days')";
   } else if (period === 'MES') {
     timeFormat = '%Y-%m-%d';
@@ -68,7 +67,7 @@ const getAttendanceHistory = (req, res) => {
     SELECT strftime('${timeFormat}', fecha_acceso, 'localtime') as periodo, COUNT(*) as total
     FROM accesos
     WHERE resultado = 'exito' AND tipo = 'entrada' AND ${whereClause}
-    GROUP BY ${groupBy}
+    GROUP BY periodo
     ORDER BY periodo ASC
   `;
   
@@ -79,7 +78,7 @@ const getAttendanceHistory = (req, res) => {
 };
 
 /**
- * RF-12: Identificación de Horas Pico (Local Time Correcto)
+ * RF-12: Horas Pico (Formato 24h explícito y Local Time)
  */
 const getPeakHours = (req, res) => {
   const query = `
@@ -96,11 +95,11 @@ const getPeakHours = (req, res) => {
 };
 
 /**
- * Exportar Datos a CSV
+ * Exportar CSV (Local Time)
  */
 const exportAttendanceToCSV = (req, res) => {
   const query = `
-    SELECT a.id, s.nombre, a.fecha_acceso, a.tipo, a.resultado
+    SELECT a.id, s.nombre, datetime(a.fecha_acceso, 'localtime') as fecha_local, a.tipo, a.resultado
     FROM accesos a
     LEFT JOIN socios s ON a.socio_id = s.id
     ORDER BY a.fecha_acceso DESC
@@ -109,9 +108,9 @@ const exportAttendanceToCSV = (req, res) => {
   db.all(query, [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     
-    let csv = "ID,Socio,Fecha,Tipo,Resultado\n";
+    let csv = "ID,Socio,Fecha Local,Tipo,Resultado\n";
     rows.forEach(row => {
-      csv += `${row.id},${row.nombre || 'Desconocido'},${row.fecha_acceso},${row.tipo},${row.resultado}\n`;
+      csv += `${row.id},${row.nombre || 'Desconocido'},"${row.fecha_local}",${row.tipo},${row.resultado}\n`;
     });
     
     res.setHeader('Content-Type', 'text/csv');
@@ -121,7 +120,7 @@ const exportAttendanceToCSV = (req, res) => {
 };
 
 /**
- * Rest of Controllers
+ * Gestión de Configuración
  */
 const getConfig = (req, res) => {
   db.all("SELECT clave, valor FROM configuracion", (err, rows) => {
@@ -186,7 +185,7 @@ const getIncomeMetrics = (req, res) => {
 
 const getRecentAccessLogs = (req, res) => {
   const query = `
-    SELECT a.*, s.nombre, s.foto
+    SELECT a.*, s.nombre, s.foto, datetime(a.fecha_acceso, 'localtime') as fecha_local
     FROM accesos a
     LEFT JOIN socios s ON a.socio_id = s.id
     ORDER BY a.fecha_acceso DESC
