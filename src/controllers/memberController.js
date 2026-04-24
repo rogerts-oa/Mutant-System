@@ -36,16 +36,16 @@ const registerMember = (req, res) => {
 };
 
 /**
- * Obtener todos los socios (No eliminados)
+ * Obtener todos los socios
  */
 const getAllMembers = (req, res) => {
   const query = `
-    SELECT s.*, m.fecha_fin, m.estatus, p.nombre as plan_nombre
+    SELECT s.*, 
+           (SELECT MAX(fecha_fin) FROM membresias WHERE socio_id = s.id) as fecha_fin,
+           (SELECT estatus FROM membresias WHERE socio_id = s.id ORDER BY fecha_fin DESC LIMIT 1) as estatus,
+           (SELECT p.nombre FROM membresias m2 JOIN planes p ON m2.plan_id = p.id WHERE m2.socio_id = s.id ORDER BY m2.fecha_fin DESC LIMIT 1) as plan_nombre
     FROM socios s 
-    LEFT JOIN membresias m ON s.id = m.socio_id
-    LEFT JOIN planes p ON m.plan_id = p.id
     WHERE s.deleted_at IS NULL
-    GROUP BY s.id
     ORDER BY s.creado_at DESC
   `;
   db.all(query, [], (err, rows) => {
@@ -55,7 +55,7 @@ const getAllMembers = (req, res) => {
 };
 
 /**
- * Obtener detalle de un socio (Información completa + Historial)
+ * Obtener detalle de un socio
  */
 const getMemberById = (req, res) => {
   const { id } = req.params;
@@ -66,13 +66,13 @@ const getMemberById = (req, res) => {
     LEFT JOIN membresias m ON s.id = m.socio_id
     LEFT JOIN planes p ON m.plan_id = p.id
     WHERE s.id = ? AND s.deleted_at IS NULL
+    ORDER BY m.fecha_fin DESC LIMIT 1
   `;
 
   db.get(socioQuery, [id], (err, socio) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!socio) return res.status(404).json({ error: 'Socio no encontrado' });
 
-    // Obtener historial de accesos
     db.all("SELECT fecha_acceso, resultado, tipo FROM accesos WHERE socio_id = ? ORDER BY fecha_acceso DESC LIMIT 10", [id], (err, accesos) => {
       socio.historial_accesos = accesos || [];
       res.json(socio);
@@ -95,7 +95,6 @@ const updateMember = (req, res) => {
 
   db.run(query, [nombre, telefono, correo, contacto_emergencia, foto, id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: 'Socio no encontrado' });
     res.json({ message: 'Datos actualizados correctamente' });
   });
 };
@@ -113,39 +112,46 @@ const deleteMember = (req, res) => {
   });
 };
 
+/**
+ * RENOVACIÓN DE MEMBRESÍA (Algoritmo Senior con UPDATE)
+ */
 const renewMembership = (req, res) => {
   const { socio_id, plan_id } = req.body;
+  const today = new Date().toISOString().split('T')[0];
 
-  // 1. Obtener el plan
-  db.get("SELECT duracion_meses, costo FROM planes WHERE id = ?", [plan_id], (err, plan) => {
+  db.get("SELECT duracion_meses FROM planes WHERE id = ?", [plan_id], (err, plan) => {
     if (err || !plan) return res.status(400).json({ error: 'Plan no encontrado' });
 
-    // 2. Obtener la membresía actual para calcular la nueva fecha
     db.get("SELECT id, fecha_fin FROM membresias WHERE socio_id = ? ORDER BY fecha_fin DESC LIMIT 1", [socio_id], (err, current) => {
-      let startDate = new Date().toISOString().split('T')[0];
+      let startDate = today;
+      const oldDate = current ? current.fecha_fin : 'N/A';
       
-      if (current) {
-        const today = new Date().toISOString().split('T')[0];
-        // Si aún está activo, sumar a partir de la fecha de vencimiento actual
-        if (current.fecha_fin > today) {
-          startDate = current.fecha_fin;
-        }
+      if (current && current.fecha_fin > today) {
+        // Si sigue activo, la nueva membresía empieza donde termina la anterior
+        startDate = current.fecha_fin;
       }
 
-      const fechaFin = calculateExpirationDate(startDate, plan.duracion_meses);
+      const newDate = calculateExpirationDate(startDate, plan.duracion_meses);
 
-      // 3. Realizar UPDATE real en la tabla membresias del último registro o crear uno si no existe
+      // Ejecutar UPDATE real
       if (current) {
         const updateQuery = `UPDATE membresias SET plan_id = ?, fecha_inicio = ?, fecha_fin = ?, tipo = 'renovacion', estatus = 'activo' WHERE id = ?`;
-        db.run(updateQuery, [plan_id, startDate, fechaFin, current.id], function(err) {
+        db.run(updateQuery, [plan_id, startDate, newDate, current.id], function(err) {
           if (err) return res.status(500).json({ error: err.message });
-          res.json({ message: 'Membresía actualizada con éxito', fechaFin });
+          
+          console.log(`[RENOVACIÓN] Socio ${socio_id} renovado. Antigua fecha: ${oldDate}, Nueva fecha: ${newDate}`);
+          
+          // Devolver el socio actualizado
+          getMemberById({ params: { id: socio_id } }, res);
         });
       } else {
         const insertQuery = `INSERT INTO membresias (socio_id, plan_id, fecha_inicio, fecha_fin, tipo, estatus) VALUES (?, ?, ?, ?, 'renovacion', 'activo')`;
-        db.run(insertQuery, [socio_id, plan_id, startDate, fechaFin], function(err) {
+        db.run(insertQuery, [socio_id, plan_id, startDate, newDate], function(err) {
           if (err) return res.status(500).json({ error: err.message });
-          res.json({ message: 'Membresía creada y activada con éxito', fechaFin });
+          
+          console.log(`[RENOVACIÓN] Socio ${socio_id} renovado (Nuevo registro). Antigua fecha: N/A, Nueva fecha: ${newDate}`);
+          
+          getMemberById({ params: { id: socio_id } }, res);
         });
       }
     });
